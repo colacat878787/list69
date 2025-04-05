@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List - 線上點餐平台</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+
+    <header>
+        <!-- Header 內容同前 -->
+        <div class="logo">
+            <h1><i class="fas fa-list-alt"></i> List 線上點餐平台</h1>
+        </div>
+        <div class="search-container">
+            <input type="search" id="search-input" placeholder="搜尋店家、美食...">
+            <button id="search-button"><i class="fas fa-search"></i></button>
+        </div>
+        <div class="user-area">
+            <button id="login-register-btn" class="btn btn-primary">登入 / 註冊</button>
+            <div id="user-info" style="display: none;">
+                <span>歡迎, <span id="username-display"></span>!</span>
+                <!-- 管理員/店家專屬按鈕區 (JS控制顯示) -->
+                <button id="admin-actions-btn" class="btn btn-warning" style="display: none;">管理後台</button>
+                <button id="logout-btn" class="btn btn-danger">登出</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- 首頁內容 -->
+        <section id="homepage" class="page-section active">
+            <h2><i class="fas fa-star"></i> 最近高評價店家</h2>
+            <div id="restaurant-list" class="card-container">
+                <!-- 餐廳卡片 (JS 會加上刪除按鈕 for admin) -->
+            </div>
+        </section>
+
+        <!-- 搜尋結果 -->
+        <section id="search-results" class="page-section">
+            <!-- 內容同前 -->
+             <h2><i class="fas fa-search"></i> 搜尋結果</h2>
+            <div id="results-container" class="card-container">
+                <!-- 搜尋結果卡片 -->
+            </div>
+            <button class="btn btn-secondary" onclick="showSection('homepage')">返回首頁</button>
+        </section>
+
+        <!-- 店家詳細資訊 & 菜單 -->
+        <section id="restaurant-detail" class="page-section">
+             <!-- 內容同前 -->
+            <h2 id="res-detail-name">店家名稱</h2>
+            <div id="res-menu" class="menu-container"></div>
+            <div class="sharing-section">
+                <h3><i class="fas fa-share-alt"></i> 揪團點餐 (分享此連結)</h3>
+                <input type="text" id="share-link-input" readonly>
+                <button id="copy-link-btn" class="btn btn-secondary"><i class="fas fa-copy"></i> 複製連結</button>
+                <button id="view-order-summary-btn" class="btn btn-info" style="display: none; margin-left: 10px;">
+                    <i class="fas fa-receipt"></i> 訂單彙總-看看大家都點了些什麼
+                </button>
+                <p>分享到：</p>
+                 <div class="social-share-buttons">
+                    <button class="btn-social line" data-platform="line"><i class="fab fa-line"></i> LINE</button>
+                    <button class="btn-social messenger" data-platform="messenger"><i class="fab fa-facebook-messenger"></i> Messenger</button>
+                    <button class="btn-social discord" data-platform="discord"><i class="fab fa-discord"></i> Discord</button>
+                    <button class="btn-social instagram" data-platform="instagram"><i class="fab fa-instagram"></i> IG</button>
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="goBack()">返回</button>
+        </section>
+
+        <!-- 給朋友填寫的訂單表單 -->
+        <section id="order-form-view" class="page-section">
+            <!-- 內容同前 -->
+             <h2><i class="fas fa-clipboard-list"></i> <span id="sharer-name-display"></span> 發起的點餐 (<span id="order-form-res-name"></span>)</h2>
+            <p>請填寫您要點的餐點和您的名字：</p>
+            <form id="friend-order-form">
+                <div class="form-group">
+                    <label for="friend-name">你的名字：</label>
+                    <input type="text" id="friend-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="friend-order">想點的餐點：</label>
+                    <textarea id="friend-order" rows="3" placeholder="例如：雞排飯 x1, 珍珠奶茶(半糖少冰) x1" required></textarea>
+                </div>
+                 <p><strong>菜單參考：</strong></p>
+                <div id="order-form-menu-ref" class="menu-container small-menu"></div>
+                <button type="submit" class="btn btn-primary">送出我的訂單</button>
+            </form>
+             <button class="btn btn-secondary" onclick="window.location.hash=''; showSection('homepage');">返回首頁</button>
+        </section>
+
+        <!-- 分享者看的訂單彙總 -->
+        <section id="order-summary" class="page-section">
+             <!-- 內容同前 -->
+            <h2><i class="fas fa-receipt"></i> 大家的訂單彙總 (<span id="summary-res-name"></span>)</h2>
+            <p>這是你發起的揪團點餐連結收到的回覆：</p>
+            <div id="summary-list"></div>
+            <button class="btn btn-secondary" onclick="window.location.hash=''; showSection('homepage');">關閉彙總 (返回首頁)</button>
+        </section>
+
+        <!-- ***** 管理員後台 ***** -->
+        <section id="admin-panel" class="page-section">
+            <h2><i class="fas fa-user-shield"></i> 管理員後台</h2>
+
+            <!-- 新增店家 -->
+            <div class="admin-section">
+                <h3><i class="fas fa-plus-circle"></i> 新增店家</h3>
+                <form id="add-restaurant-form">
+                    <div class="form-group">
+                        <label for="admin-res-name">店家名稱:</label>
+                        <input type="text" id="admin-res-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-res-rating">評分 (1-5):</label>
+                        <input type="number" id="admin-res-rating" min="1" max="5" step="0.1" required>
+                    </div>
+                     <div class="form-group">
+                        <label for="admin-res-image">圖片 URL:</label>
+                        <input type="url" id="admin-res-image" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-res-menu">菜單 (格式: 品項1,價格1;品項2,價格2;...):</label>
+                        <textarea id="admin-res-menu" rows="5" placeholder="例如： 雞腿飯,90;排骨飯,85;紅茶,20" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">確認新增店家</button>
+                </form>
+            </div>
+
+            <!-- 新增店家帳號 -->
+            <div class="admin-section">
+                <h3><i class="fas fa-user-plus"></i> 新增店家帳號</h3>
+                 <!-- 步驟一：輸入基本資料 -->
+                <form id="add-restaurant-account-form">
+                    <div class="form-group">
+                        <label for="res-acc-username">店家帳號 :</label>
+                        <input type="text" id="res-acc-username" required>
+                    </div>
+                     <div class="form-group">
+                        <label for="res-acc-password">預設密碼:</label>
+                        <input type="password" id="res-acc-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="res-acc-email">請輸入此管理員帳號所綁定的Gmail帳號:</label>
+                        <input type="email" id="res-acc-email" placeholder="此帳號綁定信箱為colacat878787@gmail.com" required pattern=".+@gmail\.com$"> <!-- Basic Gmail pattern -->
+                    </div>
+                    <button type="submit" class="btn btn-secondary">下一步 (Recaptcha)</button>
+                    <p id="add-acc-error" class="error-message"></p>
+                </form>
+
+                <!-- 步驟二：輸入驗證碼 (預設隱藏) -->
+                <div id="verification-step" style="display: none; margin-top: 1.5rem; padding: 1rem; border: 1px dashed var(--secondary-color); border-radius: 8px;">
+                    <h4>驗證 Email</h4>
+                    <p>請輸入以下六位數驗證碼完成真人驗證 <strong id="verifying-email"></strong>。</p>
+                    <p>驗證碼為： <span id="simulated-code-display" style="font-weight:bold; color: var(--primary-color);"></span>**</p>
+                     <div class="form-group">
+                        <label for="verification-code">請輸入驗證碼:</label>
+                        <input type="text" id="verification-code" pattern="\d{6}" maxlength="6" required>
+                    </div>
+                    <button id="verify-account-btn" class="btn btn-primary">驗證並建立帳號</button>
+                    <button id="cancel-verification-btn" type="button" class="btn btn-danger">取消</button>
+                    <p id="verify-error" class="error-message"></p>
+                </div>
+                 <p id="add-acc-success" class="success-message" style="margin-top: 1rem;"></p>
+            </div>
+
+            <button class="btn btn-secondary" onclick="showSection('homepage')" style="margin-top: 2rem;">返回首頁</button>
+        </section>
+
+        <!-- 店家管理後台 (未來可擴充給 restaurant 角色用) -->
+         <section id="restaurant-panel" class="page-section">
+             <h2><i class="fas fa-store"></i> 店家管理</h2>
+             <p>這裡是店家專屬的管理後台 (功能待開發)。</p>
+             <button class="btn btn-secondary" onclick="showSection('homepage')">返回首頁</button>
+         </section>
+
+
+    </main>
+
+    <footer>
+         <!-- Footer 內容同前 -->
+         <p>&copy; 2025 List. All rights reserved.</p>
+    </footer>
+
+    <!-- 登入 Modal -->
+    <div id="login-modal" class="modal">
+         <!-- 內容同前 -->
+         <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('login-modal')">&times;</span>
+            <h2>登入</h2>
+            <form id="login-form">
+                <div class="form-group"><label for="login-username">帳號:</label><input type="text" id="login-username" required></div>
+                <div class="form-group"><label for="login-password">密碼:</label><input type="password" id="login-password" required></div>
+                <button type="submit" class="btn btn-primary">登入</button>
+                <p id="login-error" class="error-message"></p>
+            </form>
+            <p>還沒有帳號？ <button class="link-button" onclick="openModal('register-modal'); closeModal('login-modal')">點此註冊</button></p>
+        </div>
+    </div>
+
+    <!-- 註冊 Modal -->
+    <div id="register-modal" class="modal">
+         <!-- 內容同前 -->
+         <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('register-modal')">&times;</span>
+            <h2>註冊新帳號</h2>
+            <form id="register-form">
+                 <div class="form-group"><label for="register-username">帳號:</label><input type="text" id="register-username" required></div>
+                 <div class="form-group"><label for="register-password">密碼:</label><input type="password" id="register-password" required></div>
+                 <div class="form-group"><label for="register-confirm-password">確認密碼:</label><input type="password" id="register-confirm-password" required></div>
+                <button type="submit" class="btn btn-primary">註冊</button>
+                <p id="register-error" class="error-message"></p>
+                 <p id="register-success" class="success-message"></p>
+            </form>
+            <p>已經有帳號了？ <button class="link-button" onclick="openModal('login-modal'); closeModal('register-modal')">返回登入</button></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
